@@ -13,7 +13,7 @@ class NotificationsController {
       } else {
         return res.status(404).send({ message: "Notification not found" });
       }
-    } else if (!req.notifications) {
+    } else if (req.notifications.length < 1) {
       return res.status(404).send({ message: "Notifications not found" });
     }
 
@@ -39,7 +39,7 @@ class NotificationsController {
   async updateNotification(req, res) {
     if (req.body.notification && req.body.notification.id) {
       if (
-        !req.notification.find((item) => item.id == req.body.notification.id)
+        !req.notifications.find((item) => item.id == req.body.notification.id)
       ) {
         return res.status(404).send({ message: "Notification not found." });
       }
@@ -62,7 +62,9 @@ class NotificationsController {
     if (req.query.id) {
       let index;
       if (
-        (index = req.users.findIndex((item) => item.id == req.query.id)) >= 0
+        (index = req.notifications.findIndex(
+          (item) => item.id == req.query.id
+        )) >= 0
       ) {
         let result = await NotificationsService.deleteNotification(
           req.query.id

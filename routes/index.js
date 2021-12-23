@@ -2,6 +2,6 @@ const express = require("express");
 const router = express.Router();
 const notificationsRoutes = require("./notifications.routes");
 
-router.use("/notificaitons", notificationsRoutes);
+router.use("/notifications", notificationsRoutes);
 
 module.exports = router;
