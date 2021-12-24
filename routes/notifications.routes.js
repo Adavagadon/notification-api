@@ -23,4 +23,6 @@ router
   .put(NotificationsController.updateNotification)
   .delete(NotificationsController.deleteNotification);
 
+router.route("/instant").post(NotificationsController.sendInstant);
+
 module.exports = router;

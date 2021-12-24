@@ -15,6 +15,27 @@ class NotificationsController {
       }
     } else if (req.notifications.length < 1) {
       return res.status(404).send({ message: "Notifications not found" });
+    } else if (req.query) {
+      let arr = req.notifications;
+
+      if (req.query.name) {
+        arr = arr.filter((item) => item.name === req.query.name);
+      }
+
+      if (req.query.from && req.query.to) {
+        let fromDate = new Date(req.query.from),
+          toDate = new Date(req.query.to);
+        arr = arr.filter((item) => {
+          let date = new Date(item.date);
+          return date >= fromDate && date <= toDate;
+        });
+      }
+
+      if (arr.length > 0) {
+        return res.status(200).send({ data: arr });
+      } else {
+        return res.status(404).send({ message: "Notification not found" });
+      }
     }
 
     return res.status(200).send({ data: req.notifications });
@@ -81,7 +102,29 @@ class NotificationsController {
         return res.status(404).send({ message: "Notification not found." });
       }
     } else {
-      return res.status(400).send({ message: "Bad request." });
+      let result = await NotificationsService.deleteAllNotifications();
+
+      console.log(result);
+
+      if (result) {
+        return res.status(200).send(result);
+      } else {
+        return res
+          .status(500)
+          .send({ message: "Unable delete notifications." });
+      }
+    }
+  }
+
+  async sendInstant(req, res) {
+    const result = await NotificationsService.sendInstant(req.body.mail);
+
+    if (result) {
+      return res.status(200).send(result);
+    } else {
+      return res
+        .status(500)
+        .send({ message: "Unable send instant notification." });
     }
   }
 }

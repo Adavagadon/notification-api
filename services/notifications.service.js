@@ -1,4 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
+const TaskRunner = require("./taskrunner");
+const nodemailer = require("nodemailer");
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -66,8 +68,13 @@ class NotificationsService {
   }
 
   async createNotification(data) {
-    console.log(data);
     let result = await Notification.create(data);
+
+    if (!result) return false;
+
+    data.id = result.id;
+
+    result = TaskRunner.createTasks(data);
 
     if (result) {
       return { message: "Notification created." };
@@ -79,6 +86,10 @@ class NotificationsService {
   async updateNotification(data) {
     let result = await Notification.update(data, { where: { id: data.id } });
 
+    if (!result) return false;
+
+    result = TaskRunner.updateTasks(data);
+
     if (result) {
       return { message: "Notification updated." };
     } else {
@@ -89,9 +100,69 @@ class NotificationsService {
   async deleteNotification(data) {
     let result = await Notification.destroy({ where: { id: data } });
 
+    if (!result) return false;
+
+    result = TaskRunner.deleteTask(data);
+
     if (result) {
       return { message: "Notification deleted." };
     } else {
+      return false;
+    }
+  }
+
+  async deleteAllNotifications() {
+    let result = await Notification.destroy({ truncate: true });
+
+    result = TaskRunner.deleteAllTasks();
+
+    if (result) {
+      return { message: "Notifications deleted." };
+    } else {
+      return false;
+    }
+  }
+
+  async restartNotifications() {
+    let data = await this.getNotifications();
+
+    if (data) {
+      for (let item of data) {
+        let result = TaskRunner.createTasks(item);
+
+        if (!result) {
+          console.log("Unable start Task.");
+        } else {
+          console.log("Task started.");
+        }
+      }
+    } else {
+      console.log("No tasks to run.");
+    }
+  }
+
+  async sendInstant(data) {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EM_ADRS,
+        pass: process.env.EM_PASS,
+      },
+    });
+
+    try {
+      let result = await transporter.sendMail({
+        from: `"Notification API" <${process.env.EM_ADRS}>`,
+        to: data.recievers,
+        subject: data.name,
+        text: data.text,
+      });
+
+      if (!result) return false;
+
+      return { message: "Instant sent." };
+    } catch (err) {
+      console.log(err);
       return false;
     }
   }
