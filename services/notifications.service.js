@@ -1,6 +1,7 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const TaskRunner = require("./taskrunner");
 const nodemailer = require("nodemailer");
+const Logger = require("./logger");
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,
@@ -70,15 +71,32 @@ class NotificationsService {
   async createNotification(data) {
     let result = await Notification.create(data);
 
-    if (!result) return false;
+    if (!result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable create row in DB",
+      });
+      return false;
+    }
 
     data.id = result.id;
 
     result = TaskRunner.createTasks(data);
 
     if (result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Complete",
+        text: "Notification created.",
+      });
       return { message: "Notification created." };
     } else {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable create task.",
+      });
       return false;
     }
   }
@@ -86,13 +104,30 @@ class NotificationsService {
   async updateNotification(data) {
     let result = await Notification.update(data, { where: { id: data.id } });
 
-    if (!result) return false;
+    if (!result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable update row in DB",
+      });
+      return false;
+    }
 
     result = TaskRunner.updateTasks(data);
 
     if (result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Complete",
+        text: "Notification updated.",
+      });
       return { message: "Notification updated." };
     } else {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable update task.",
+      });
       return false;
     }
   }
@@ -100,13 +135,30 @@ class NotificationsService {
   async deleteNotification(data) {
     let result = await Notification.destroy({ where: { id: data } });
 
-    if (!result) return false;
+    if (!result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable delete row in DB.",
+      });
+      return false;
+    }
 
     result = TaskRunner.deleteTask(data);
 
     if (result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Complete",
+        text: "Notification deleted.",
+      });
       return { message: "Notification deleted." };
     } else {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable delete task.",
+      });
       return false;
     }
   }
@@ -117,8 +169,18 @@ class NotificationsService {
     result = TaskRunner.deleteAllTasks();
 
     if (result) {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Complete",
+        text: "All notifications deleted.",
+      });
       return { message: "Notifications deleted." };
     } else {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable delete all notifications.",
+      });
       return false;
     }
   }
@@ -131,12 +193,27 @@ class NotificationsService {
         let result = TaskRunner.createTasks(item);
 
         if (!result) {
+          Logger.writeLog({
+            date: new Date(),
+            type: "Error",
+            text: "Unable start Task.",
+          });
           console.log("Unable start Task.");
         } else {
+          Logger.writeLog({
+            date: new Date(),
+            type: "Complete",
+            text: "Task started.",
+          });
           console.log("Task started.");
         }
       }
     } else {
+      Logger.writeLog({
+        date: new Date(),
+        type: "Info",
+        text: "No tasks to run.",
+      });
       console.log("No tasks to run.");
     }
   }
@@ -158,11 +235,28 @@ class NotificationsService {
         text: data.text,
       });
 
-      if (!result) return false;
+      if (!result) {
+        Logger.writeLog({
+          date: new Date(),
+          type: "Error",
+          text: "Unable sent an instant notification.",
+        });
+        return false;
+      }
 
+      Logger.writeLog({
+        date: new Date(),
+        type: "Complete",
+        text: "Instant sent.",
+      });
       return { message: "Instant sent." };
     } catch (err) {
       console.log(err);
+      Logger.writeLog({
+        date: new Date(),
+        type: "Error",
+        text: "Unable sent an instant notification.",
+      });
       return false;
     }
   }
